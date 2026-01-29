@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    environment:
+      - INFLUXDB_DB=speedtest
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=adminpassword
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - influxdb
+
+  speedtest:
+    image: robinmanuelthiel/speedtest:latest
+    container_name: speedtest
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - LOOP=true
+      - LOOP_DELAY=3600
+      - DB_SAVE=true
+      - DB_HOST=http://influxdb:8086
+      - DB_NAME=speedtest
+      - DB_USERNAME=admin
+      - DB_PASSWORD=adminpassword
+    depends_on:
+      - influxdb
+
+volumes:
+  influxdb-data:
+  grafana-data:
